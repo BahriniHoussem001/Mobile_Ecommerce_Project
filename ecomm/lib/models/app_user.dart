@@ -1,6 +1,22 @@
+// ============================================================================
+// User roles
+// ============================================================================
+
+// Définit les rôles possibles dans l'application.
+// - client : utilisateur normal de l'application.
+// - admin  : utilisateur avec accès à l'espace d'administration.
 enum UserRole { client, admin }
 
+// ============================================================================
+// AppUser model
+// ============================================================================
+
+// Modèle principal représentant un utilisateur de l'application.
 class AppUser {
+  // --------------------------------------------------------------------------
+  // Properties
+  // --------------------------------------------------------------------------
+
   final String uid;
   final String name;
   final String email;
@@ -9,6 +25,10 @@ class AppUser {
   final String? phone;
   final List<ShippingAddress> addresses;
   final DateTime createdAt;
+
+  // --------------------------------------------------------------------------
+  // Constructor
+  // --------------------------------------------------------------------------
 
   const AppUser({
     required this.uid,
@@ -21,9 +41,21 @@ class AppUser {
     required this.createdAt,
   });
 
+  // --------------------------------------------------------------------------
+  // Computed properties
+  // --------------------------------------------------------------------------
+
+  // Permet de vérifier rapidement si l'utilisateur est un administrateur.
   bool get isAdmin => role == UserRole.admin;
 
+  // --------------------------------------------------------------------------
+  // Serialization
+  // --------------------------------------------------------------------------
+
+  // Convertit les données récupérées depuis la base en objet AppUser.
   factory AppUser.fromMap(Map<String, dynamic> map, String uid) {
+    final addressesData = map['addresses'] as List<dynamic>? ?? [];
+
     return AppUser(
       uid: uid,
       name: map['name'] as String,
@@ -31,8 +63,9 @@ class AppUser {
       role: map['role'] == 'admin' ? UserRole.admin : UserRole.client,
       photoUrl: map['photoUrl'] as String?,
       phone: map['phone'] as String?,
-      addresses: (map['addresses'] as List<dynamic>? ?? [])
-          .map((a) => ShippingAddress.fromMap(a as Map<String, dynamic>))
+      addresses: addressesData
+          .map((address) =>
+              ShippingAddress.fromMap(address as Map<String, dynamic>))
           .toList(),
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         (map['createdAt'] as int?) ?? 0,
@@ -40,16 +73,24 @@ class AppUser {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'email': email,
-    'role': role.name,
-    'photoUrl': photoUrl,
-    'phone': phone,
-    'addresses': addresses.map((a) => a.toMap()).toList(),
-    'createdAt': createdAt.millisecondsSinceEpoch,
-  };
+  // Convertit l'objet AppUser en Map pour l'enregistrement dans la base.
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email,
+      'role': role.name,
+      'photoUrl': photoUrl,
+      'phone': phone,
+      'addresses': addresses.map((address) => address.toMap()).toList(),
+      'createdAt': createdAt.millisecondsSinceEpoch,
+    };
+  }
 
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
+
+  // Crée une nouvelle copie de l'utilisateur avec certains champs modifiés.
   AppUser copyWith({
     String? name,
     String? phone,
@@ -69,15 +110,28 @@ class AppUser {
   }
 }
 
+// ============================================================================
+// ShippingAddress model
+// ============================================================================
+
+// Modèle représentant une adresse de livraison associée à un utilisateur.
 class ShippingAddress {
+  // --------------------------------------------------------------------------
+  // Properties
+  // --------------------------------------------------------------------------
+
   final String id;
-  final String label; // e.g. "Home", "Office"
+  final String label;
   final String fullName;
   final String street;
   final String city;
   final String postalCode;
   final String country;
   final bool isDefault;
+
+  // --------------------------------------------------------------------------
+  // Constructor
+  // --------------------------------------------------------------------------
 
   const ShippingAddress({
     required this.id,
@@ -90,8 +144,18 @@ class ShippingAddress {
     this.isDefault = false,
   });
 
+  // --------------------------------------------------------------------------
+  // Computed properties
+  // --------------------------------------------------------------------------
+
+  // Retourne l'adresse complète sous forme d'une seule chaîne.
   String get fullAddress => '$street, $city $postalCode, $country';
 
+  // --------------------------------------------------------------------------
+  // Serialization
+  // --------------------------------------------------------------------------
+
+  // Convertit une Map provenant de la base en objet ShippingAddress.
   factory ShippingAddress.fromMap(Map<String, dynamic> map) {
     return ShippingAddress(
       id: map['id'] as String,
@@ -105,14 +169,17 @@ class ShippingAddress {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'label': label,
-    'fullName': fullName,
-    'street': street,
-    'city': city,
-    'postalCode': postalCode,
-    'country': country,
-    'isDefault': isDefault,
-  };
+  // Convertit l'objet ShippingAddress en Map pour l'enregistrement.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'label': label,
+      'fullName': fullName,
+      'street': street,
+      'city': city,
+      'postalCode': postalCode,
+      'country': country,
+      'isDefault': isDefault,
+    };
+  }
 }
